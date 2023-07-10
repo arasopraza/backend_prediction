@@ -6,7 +6,6 @@ app = Flask(__name__)
 
 model = joblib.load("komoditas.pkl")
 
-app.run("0.0.0.0")
 @app.route('/predict', methods = ["POST"])
 def predict():
     x1 = request.json["x1"]
@@ -16,5 +15,18 @@ def predict():
 
     # make prediction using loaded regresi model
     y_pred = model.predict(X)
+
+    data = {
+        "prediction": int(y_pred[0])
+    }
+
+    response = {
+        "message": "Success",
+        "data": data
+    }
+
     # return prediction as JSON response
-    return jsonify({"prediction": int(y_pred[0])})
+    return jsonify(response)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
