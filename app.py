@@ -1,7 +1,12 @@
-from flask import Flask, jsonify, request
-from upload_data import upload_file
 import joblib
 import numpy as np
+import pandas as pd
+from flask import Flask, jsonify, request
+from upload_data import upload_file
+from train_data import detect_null_or_empty
+from train_data import detect_outlier
+from train_data import binning_data
+from train_data import train_data
 
 app = Flask(__name__)
 
@@ -76,6 +81,50 @@ def upload():
     komoditas = request.form.get("komoditas")
     file = request.files["file"]
     return upload_file(file, komoditas)
+
+@app.route('/data-cleaning')
+def cleaning():
+    komoditas = request.args.get('komoditas')
+    df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
+    outliers = detect_outlier(df)
+    null_value = detect_null_or_empty(df)
+    if null_value is not None:
+        response = {
+            "message": "Success get nulls value",
+            "data": null_value
+        }
+    elif outliers is not None:
+        outlier_json = outliers.to_dict(orient="records")
+        response = {
+            "message": "Success get outliers",
+            "data": outlier_json
+        }
+    elif outliers is None:
+        response = {
+            "message": "Success",
+            "data": df.to_dict(orient="records")
+        }
+    else:
+        response = {
+            "message": "Success",
+            "data": df.to_dict(orient="records")
+        }
+
+    return response
+
+@app.route('/binning-data')
+def binning():
+    response = {}
+    komoditas = request.args.get('komoditas')
+    df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
+    binning = binning_data(df).to_dict()
+    response["data"] = df.to_dict(orient='records')
+    return jsonify(response), 200
+
+@app.route('/train-model')
+def train():
+    komoditas = request.args.get('komoditas')
+    return train_data(komoditas)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
