@@ -57,18 +57,17 @@ def detect_null_or_empty(df):
     df.fillna(df.mean(numeric_only=True), inplace=True)
     return data
   
-def detect_outlier(df):
-  data = df["Harga"].sort_values().reset_index(drop= True)
+def detect_outlier(df, column):
+  data = df[column].sort_values().reset_index(drop= True)
   
   # Compute the quartiles
-  n = len(data)
   q1 = (data.loc[2] + data.loc[3]) / 2
   q3 = (data.loc[8] + data.loc[9]) / 2
   IQR = q3 - q1
   lower_bound = q1 - (1.5*IQR)
   upper_bound = q3 + (1.5*IQR)
 
-  outlier = df[(df["Harga"] < lower_bound) | (df["Harga"] > upper_bound)]
+  outlier = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
   if not outlier.empty:
     return outlier
   else:

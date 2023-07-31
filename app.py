@@ -86,18 +86,25 @@ def upload():
 def cleaning():
     komoditas = request.args.get('komoditas')
     df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
-    outliers = detect_outlier(df)
+    
+    outliers = {}
+    columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
+    for column in columns_to_check:
+        row = detect_outlier(df, column)
+        if row is not None:
+            outliers = row.to_dict(orient="records")
+
     null_value = detect_null_or_empty(df)
+
     if null_value is not None:
         response = {
             "message": "Success get nulls value",
             "data": null_value
         }
     elif outliers is not None:
-        outlier_json = outliers.to_dict(orient="records")
         response = {
             "message": "Success get outliers",
-            "data": outlier_json
+            "data": outliers
         }
     elif outliers is None:
         response = {
