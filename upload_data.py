@@ -31,9 +31,14 @@ def upload_file(file, komoditas):
         os.remove("data/" + file.filename)
 
         data = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
-        
-        response["data"] = data.to_dict(orient='records')
-        response["message"] = "Upload File Sukses"
+
+        if validate_data(komoditas):
+            response["data"] = data.to_dict(orient='records')
+            response["message"] = "Upload File Sukses"
+        else:
+            response["data"] = []
+            response["message"] = "Data yang diupload tidak sesuai"
+    
         return jsonify(response), 200
     else:
         response["message"] = "Format File Tidak Didukung"
@@ -46,3 +51,11 @@ def convert_data(file, komoditas):
                   header=True)
   
   return data
+
+def validate_data(komoditas):
+    df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
+    columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
+
+    all_columns_exist = all(column in df.columns for column in columns_to_check)
+
+    return all_columns_exist
