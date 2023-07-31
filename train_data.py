@@ -8,8 +8,8 @@ response = {}
 
 def train_data(komoditas):
   df = pd.DataFrame(pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv"))
-
-  if detect_outlier(df) is None :
+  
+  if detect_outlier(df, "Curah Hujan") is None or detect_outlier(df, "Harga") is None or detect_outlier(df, "Produksi") is None :
     detect_null_or_empty(df)
     # Train 
     modeling(df)
@@ -27,7 +27,10 @@ def train_data(komoditas):
   
   else:
     detect_null_or_empty(df)
-    binning_data(df)
+    columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
+    for column in columns_to_check:
+      binning_data(df, column)
+
     modeling(df)
     y_pred = modeling(df)[4]
     response["korelasi_hujan_kepada_harga"] = {
@@ -73,8 +76,8 @@ def detect_outlier(df, column):
   else:
     return None
 
-def binning_data(df):
-  data = df["Harga"].sort_values().reset_index(drop= True)
+def binning_data(df, column):
+  data = df[column].sort_values().reset_index(drop= True)
   data.to_numpy()
 
   split_data = np.array_split(data, 3)
@@ -86,9 +89,9 @@ def binning_data(df):
   mean_bin2 = round(bin2.mean())
   mean_bin3 = round(bin3.mean())
 
-  df["Harga"] = df["Harga"].mask(df["Harga"] <= bin1[3], mean_bin1)
-  df["Harga"] = df["Harga"].mask((df["Harga"] > bin1[3]) & (df["Harga"] < bin3[8]), mean_bin2)
-  df["Harga"] = df["Harga"].mask(df["Harga"] >= bin3[8], mean_bin3)
+  df[column] = df[column].mask(df[column] <= bin1[3], mean_bin1)
+  df[column] = df[column].mask((df[column] > bin1[3]) & (df[column] < bin3[8]), mean_bin2)
+  df[column] = df[column].mask(df[column] >= bin3[8], mean_bin3)
 
   return df
 

@@ -124,7 +124,11 @@ def binning():
     response = {}
     komoditas = request.args.get('komoditas')
     df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
-    binning = binning_data(df).to_dict()
+    columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
+    
+    for column in columns_to_check:
+      binning_data(df, column)
+    
     response["data"] = df.to_dict(orient='records')
     return jsonify(response), 200
 
