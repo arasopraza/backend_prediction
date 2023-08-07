@@ -1,3 +1,6 @@
 venv/
 .DS_Store
 /data
+modelBawangMerah.pkl
+modelCabaiMerah.pkl
+komoditas.pkl

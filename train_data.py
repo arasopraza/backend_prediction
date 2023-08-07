@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import pickle
+from joblib import dump
 from flask import jsonify
 from sklearn.linear_model import LinearRegression
 from scipy.stats import pearsonr
@@ -10,36 +12,36 @@ def train_data(komoditas):
   df = pd.DataFrame(pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv"))
   
   if detect_outlier(df, "Curah Hujan") is None or detect_outlier(df, "Harga") is None or detect_outlier(df, "Produksi") is None :
-    detect_null_or_empty(df)
+    handle_null_values(df)
     # Train 
-    modeling(df)
-    y_pred = modeling(df)[4]
+    modeling(df, komoditas)
+    y_pred = modeling(df, komoditas)[4]
 
     response["korelasi_hujan_kepada_harga"] = {
-      "nama": modeling(df)[1],
-      "nilai": modeling(df)[0]
+      "nama": modeling(df, komoditas)[1],
+      "nilai": modeling(df, komoditas)[0]
     }
     response["korelasi_produksi_kepada_harga"] = {
-      "nama": modeling(df)[3],
-      "nilai": modeling(df)[2]
+      "nama": modeling(df, komoditas)[3],
+      "nilai": modeling(df, komoditas)[2]
     }
     response["hasil_prediksi"] = y_pred.tolist()
   
   else:
-    detect_null_or_empty(df)
+    handle_null_values(df)
     columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
     for column in columns_to_check:
       binning_data(df, column)
 
-    modeling(df)
-    y_pred = modeling(df)[4]
+    modeling(df, komoditas)
+    y_pred = modeling(df, komoditas)[4]
     response["korelasi_hujan_kepada_harga"] = {
-      "nama": modeling(df)[1],
+      "nama": modeling(df, komoditas)[1],
       "nilai": modeling(df)[0]
     }
     response["korelasi_produksi_kepada_harga"] = {
-      "nama": modeling(df)[3],
-      "nilai": modeling(df)[2]
+      "nama": modeling(df, komoditas)[3],
+      "nilai": modeling(df, komoditas)[2]
     }
     response["hasil_prediksi"] = y_pred.tolist()
     
@@ -47,18 +49,22 @@ def train_data(komoditas):
 
   return jsonify(response)
   
-def detect_null_or_empty(df):
-  data = []
-  null_rows = df[df.isnull().any(axis=1)]
-  for idx, row in null_rows.iterrows():
-    row_dict = {}
-    for column in df.columns:
-      row_dict[column] = row[column] if pd.notna(row[column]) else 'nan'
-    data.append(row_dict)
+def handle_null_values(df):
+    # For numerical columns, fill nulls with column mean
+    # for column in df.select_dtypes(include=['float64', 'int64']).columns:
+    #     df[column].fillna(df[column].mean(), inplace=True)
+  
+    # Then, check which values were replaced
+   null_rows = df[df.isnull().any(axis=1)]
 
-  if not null_rows.empty:
-    df.fillna(df.mean(numeric_only=True), inplace=True)
-    return data
+   if null_rows.empty:
+      return None
+   
+  #  for column in df.select_dtypes(include=['float64', 'int64']).columns:
+  #      data = df[column].fillna(df[column].mean(), inplace=True)
+
+  #  print(data)
+   return null_rows
   
 def detect_outlier(df, column):
   data = df[column].sort_values().reset_index(drop= True)
@@ -103,7 +109,7 @@ def normalization_data(df):
   df["Curah Hujan dan Produksi"] = curah_hujan_produksi
 
 
-def modeling(df):
+def modeling(df, komoditas):
   keterangan_korelasi_hujan = ""
   keterangan_korelasi_produksi = ""
 
@@ -120,6 +126,11 @@ def modeling(df):
   y_pred = regressor.predict(x)
   korelasi_hujan, _ = pearsonr(df["Curah Hujan"], df["Harga"])
   korelasi_produksi, _ = pearsonr(df["Produksi"], df["Harga"])
+
+  dump(regressor, 'prediction.joblib')
+  # Simpan model ke dalam file
+  with open('model' + komoditas + '.pkl', 'wb') as f:
+    pickle.dump(regressor, f)
 
   if 0 <= korelasi_hujan < 0.2:
     keterangan_korelasi_hujan = "Sangat Lemah"

@@ -3,16 +3,16 @@ import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request
 from upload_data import upload_file
-from train_data import detect_null_or_empty
+from train_data import handle_null_values
 from train_data import detect_outlier
 from train_data import binning_data
 from train_data import train_data
 
 app = Flask(__name__)
 
-model_bawang_merah = joblib.load("komoditas.pkl")
-model_cabai_merah = joblib.load("komoditas.pkl")
-model_cabai_rawit = joblib.load("komoditas.pkl")
+model_bawang_merah = joblib.load("modelBawangMerah.pkl")
+model_cabai_merah = joblib.load("modelCabaiMerah.pkl")
+model_cabai_rawit = joblib.load("modelCabaiMerah.pkl")
 
 @app.route('/predict', methods = ["POST"])
 def predict():
@@ -80,6 +80,7 @@ def predict():
 def upload():
     komoditas = request.form.get("komoditas")
     file = request.files["file"]
+    print(file)
     return upload_file(file, komoditas)
 
 @app.route('/data-cleaning')
@@ -88,28 +89,25 @@ def cleaning():
     df = pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv")
     
     outliers = {}
+    null_data = {}
     columns_to_check = ['Curah Hujan', 'Harga', 'Produksi']
     for column in columns_to_check:
         row = detect_outlier(df, column)
         if row is not None:
             outliers = row.to_dict(orient="records")
 
-    null_value = detect_null_or_empty(df)
+    null_value = handle_null_values(df)
 
     if null_value is not None:
+        null_data = null_value.to_dict(orient="records")
         response = {
             "message": "Success get nulls value",
-            "data": null_value
+            "data": null_data
         }
     elif outliers is not None:
         response = {
             "message": "Success get outliers",
             "data": outliers
-        }
-    elif outliers is None:
-        response = {
-            "message": "Success",
-            "data": df.to_dict(orient="records")
         }
     else:
         response = {
