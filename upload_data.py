@@ -9,7 +9,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
         
-upload_directory = 'be/data'
+upload_directory = '/data'
 
 response = {
     "message": "",
