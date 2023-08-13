@@ -20,7 +20,18 @@ def predict():
     x1 = request.json["x1"]
     x2 = request.json["x2"]
 
-    X = np.array([x1, x2]).reshape(1, -1)
+    df = pd.DataFrame(pd.read_csv("data/DataTraining" + komoditas.replace(" ", "") + ".csv"))
+    curah_hujan_min = df["Curah Hujan"].min()
+    curah_hujan_max = df["Curah Hujan"].max()
+    produksi_min = df["Produksi"].min()
+    produksi_max = df["Produksi"].max()
+    normal_curah = (float(x1) - curah_hujan_min) / (curah_hujan_max - curah_hujan_min)
+    normal_produksi = (float(x2) - produksi_min) / (produksi_max - produksi_min)
+
+    var_produksi = normal_produksi
+    var_curah_produksi =  normal_curah * normal_produksi
+    
+    X = np.array([var_produksi, var_curah_produksi]).reshape(1, -1)
 
     if komoditas == "Bawang Merah":
         # make prediction using loaded regresi model
